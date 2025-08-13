@@ -13,35 +13,41 @@ class App(arcade.Window):
         super().__init__(WIDTH, HEIGHT, TITLE, resizable=True, update_rate=1 / 120)
         arcade.set_background_color(arcade.color.DARK_SLATE_GRAY)
 
-        # Simple controllable player sprite
-        self.player = arcade.SpriteSolidColor(32, 32, arcade.color.AZURE)
-        self.player.center_x = WIDTH // 2
-        self.player.center_y = HEIGHT // 2
-        self.player_list = arcade.SpriteList()
-        self.player_list.append(self.player)
+        # Simple controllable object sprite
+        self.object = arcade.SpriteSolidColor(32, 32, arcade.color.AZURE)
+        self.object.center_x = WIDTH // 2
+        self.object.center_y = HEIGHT // 2
+        self.object_list = arcade.SpriteList()
+        self.object_list.append(self.object)
+        self.object_velocity_y = 0.0
+        self.gravity = -980 # pixels/second²
 
         # Track pressed directions
         self.keys: Set[str] = set()
 
     def on_draw(self):
         self.clear()
-        self.player_list.draw()
+        self.object_list.draw()
 
         # HUD
         controls = "Move: WASD / Arrows   Fullscreen: F11   Quit: ESC"
         arcade.draw_text(controls, 10, 10, arcade.color.LIGHT_GRAY, 14)
 
     def on_update(self, delta_time: float):
+        # Player control for object's x position
         dx = (("right" in self.keys) - ("left" in self.keys)) * MOVE_SPEED * delta_time
-        dy = (("up" in self.keys) - ("down" in self.keys)) * MOVE_SPEED * delta_time
+        # Gravity physics for y position
+        self.object_velocity_y += self.gravity * delta_time  # Update velocity
+        dy = delta_time * self.object_velocity_y
 
         # Clamp to window bounds
-        new_x = self.player.center_x + dx
-        new_y = self.player.center_y + dy
-        half_w = self.player.width / 2
-        half_h = self.player.height / 2
-        self.player.center_x = max(half_w, min(self.width - half_w, new_x))
-        self.player.center_y = max(half_h, min(self.height - half_h, new_y))
+        new_x = self.object.center_x + dx
+        new_y = self.object.center_y + dy
+        half_w = self.object.width / 2
+        half_h = self.object.height / 2
+        # Check that the object's sprite is still within the bounderies of the window
+        self.object.center_x = max(half_w, min(self.width - half_w, new_x))
+        self.object.center_y = max(half_h, min(self.height - half_h, new_y))
 
     def on_key_press(self, symbol: int, modifiers: int):
         if symbol == arcade.key.ESCAPE:
