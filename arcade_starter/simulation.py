@@ -35,7 +35,7 @@ class PhysicsSimulation:
     def reset(self):
         """Reset the simulation to initial state."""
         self.object.center_x = self.width // 2
-        self.object.center_y = self.height // 2
+        self.object.center_y = self.height - (self.object.height / 2)
         self.object_velocity_y = 0.0
         self.keys.clear()
     
