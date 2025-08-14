@@ -1,10 +1,16 @@
 #!/usr/bin/env python
-from typing import Set
+"""
+Main Application Module
+
+This module contains the main execution flow, game window management,
+and state handling for the physics simulation application.
+"""
+
 import arcade
+from simulation import PhysicsSimulation
 
 WIDTH, HEIGHT = 960, 540
 TITLE = "Arcade Starter - Experiments"
-MOVE_SPEED = 300.0
 
 # Game states
 MENU_STATE = 0
@@ -13,6 +19,8 @@ OPTIONS_STATE = 2
 
 
 class App(arcade.Window):
+    """Main application window handling game states and UI."""
+    
     def __init__(self):
         super().__init__(WIDTH, HEIGHT, TITLE, resizable=True, update_rate=1 / 120)
         arcade.set_background_color(arcade.color.DARK_SLATE_GRAY)
@@ -21,29 +29,22 @@ class App(arcade.Window):
         self.current_state = MENU_STATE
         self.selected_menu_item = 0  # 0=Start, 1=Options, 2=Exit
         
-        # Simple controllable object sprite
-        self.object = arcade.SpriteSolidColor(32, 32, arcade.color.AZURE)
-        self.object.center_x = WIDTH // 2
-        self.object.center_y = HEIGHT // 2
-        self.object_list = arcade.SpriteList()
-        self.object_list.append(self.object)
-        self.object_velocity_y = 0.0
-        self.gravity = -980 # pixels/second²
-
-        # Track pressed directions
-        self.keys: Set[str] = set()
+        # Initialize physics simulation
+        self.simulation = PhysicsSimulation(WIDTH, HEIGHT)
 
     def on_draw(self):
+        """Main draw method that delegates to state-specific draw methods."""
         self.clear()
         
         if self.current_state == MENU_STATE:
             self.draw_menu()
         elif self.current_state == SIMULATION_STATE:
-            self.draw_simulation()
+            self.simulation.draw()
         elif self.current_state == OPTIONS_STATE:
             self.draw_options()
     
     def draw_menu(self):
+        """Draw the main menu screen."""
         # Title
         arcade.draw_text("Physics Simulation", WIDTH // 2, HEIGHT - 100, 
                         arcade.color.WHITE, 48, anchor_x="center")
@@ -66,14 +67,8 @@ class App(arcade.Window):
         arcade.draw_text("Use UP/DOWN arrows to navigate, ENTER to select", 
                         WIDTH // 2, 50, arcade.color.LIGHT_GRAY, 16, anchor_x="center")
     
-    def draw_simulation(self):
-        self.object_list.draw()
-        
-        # HUD
-        controls = "Move: WASD / Arrows   Fullscreen: F11   Back to Menu: ESC"
-        arcade.draw_text(controls, 10, 10, arcade.color.LIGHT_GRAY, 14)
-    
     def draw_options(self):
+        """Draw the options screen."""
         # Title
         arcade.draw_text("Options", WIDTH // 2, HEIGHT - 100, 
                         arcade.color.WHITE, 36, anchor_x="center")
@@ -91,24 +86,13 @@ class App(arcade.Window):
                         arcade.color.LIGHT_GRAY, 16, anchor_x="center")
 
     def on_update(self, delta_time: float):
+        """Main update method that delegates to simulation when active."""
         # Only update physics when in simulation state
         if self.current_state == SIMULATION_STATE:
-            # Player control for object's x position
-            dx = (("right" in self.keys) - ("left" in self.keys)) * MOVE_SPEED * delta_time
-            # Gravity physics for y position
-            self.object_velocity_y += self.gravity * delta_time  # Update velocity
-            dy = delta_time * self.object_velocity_y
-
-            # Clamp to window bounds
-            new_x = self.object.center_x + dx
-            new_y = self.object.center_y + dy
-            half_w = self.object.width / 2
-            half_h = self.object.height / 2
-            # Check that the object's sprite is still within the bounderies of the window
-            self.object.center_x = max(half_w, min(self.width - half_w, new_x))
-            self.object.center_y = max(half_h, min(self.height - half_h, new_y))
+            self.simulation.update(delta_time)
 
     def on_key_press(self, symbol: int, modifiers: int):
+        """Handle key press events based on current state."""
         if self.current_state == MENU_STATE:
             self.handle_menu_keys(symbol)
         elif self.current_state == SIMULATION_STATE:
@@ -117,6 +101,7 @@ class App(arcade.Window):
             self.handle_options_keys(symbol)
     
     def handle_menu_keys(self, symbol: int):
+        """Handle key presses in the menu state."""
         if symbol == arcade.key.UP:
             self.selected_menu_item = (self.selected_menu_item - 1) % 3
         elif symbol == arcade.key.DOWN:
@@ -124,10 +109,7 @@ class App(arcade.Window):
         elif symbol == arcade.key.ENTER:
             if self.selected_menu_item == 0:  # Start Simulation
                 self.current_state = SIMULATION_STATE
-                # Reset object position and velocity when starting simulation
-                self.object.center_x = WIDTH // 2
-                self.object.center_y = HEIGHT // 2
-                self.object_velocity_y = 0.0
+                self.simulation.reset()  # Reset simulation state
             elif self.selected_menu_item == 1:  # Options
                 self.current_state = OPTIONS_STATE
             elif self.selected_menu_item == 2:  # Exit
@@ -136,33 +118,31 @@ class App(arcade.Window):
             arcade.exit()
     
     def handle_simulation_keys(self, symbol: int):
+        """Handle key presses in the simulation state."""
         if symbol == arcade.key.ESCAPE:
             self.current_state = MENU_STATE
-            self.keys.clear()  # Clear any held keys when returning to menu
-        elif symbol in (arcade.key.LEFT, arcade.key.A):
-            self.keys.add("left")
-        elif symbol in (arcade.key.RIGHT, arcade.key.D):
-            self.keys.add("right")
-        elif symbol in (arcade.key.UP, arcade.key.W):
-            self.keys.add("up")
-        elif symbol in (arcade.key.DOWN, arcade.key.S):
-            self.keys.add("down")
         elif symbol == arcade.key.F11:
             self.set_fullscreen(not self.fullscreen)
+        else:
+            # Delegate movement keys to simulation
+            self.simulation.handle_key_press(symbol)
     
     def handle_options_keys(self, symbol: int):
+        """Handle key presses in the options state."""
         if symbol == arcade.key.ESCAPE:
             self.current_state = MENU_STATE
 
     def on_key_release(self, symbol: int, modifiers: int):
-        if symbol in (arcade.key.LEFT, arcade.key.A):
-            self.keys.discard("left")
-        elif symbol in (arcade.key.RIGHT, arcade.key.D):
-            self.keys.discard("right")
-        elif symbol in (arcade.key.UP, arcade.key.W):
-            self.keys.discard("up")
-        elif symbol in (arcade.key.DOWN, arcade.key.S):
-            self.keys.discard("down")
+        """Handle key release events."""
+        # Only handle key releases in simulation state
+        if self.current_state == SIMULATION_STATE:
+            self.simulation.handle_key_release(symbol)
+    
+    def on_resize(self, width: int, height: int):
+        """Handle window resize events."""
+        super().on_resize(width, height)
+        # Update simulation dimensions
+        self.simulation.resize(width, height)
 
 
 if __name__ == "__main__":
