@@ -64,7 +64,7 @@ class App(arcade.Window):
                 arcade.draw_text("<", WIDTH // 2 + 120, y_pos, arcade.color.YELLOW, 24)
         
         # Instructions
-        arcade.draw_text("Use UP/DOWN arrows to navigate, ENTER to select", 
+        arcade.draw_text("Use UP (W)/DOWN (S) to navigate, ENTER or click to select", 
                         WIDTH // 2, 50, arcade.color.LIGHT_GRAY, 16, anchor_x="center")
     
     def draw_options(self):
@@ -102,19 +102,23 @@ class App(arcade.Window):
     
     def handle_menu_keys(self, symbol: int):
         """Handle key presses in the menu state."""
-        if symbol == arcade.key.UP:
+        if symbol in (arcade.key.UP, arcade.key.W):
             self.selected_menu_item = (self.selected_menu_item - 1) % 3
-        elif symbol == arcade.key.DOWN:
+        elif symbol in (arcade.key.DOWN, arcade.key.S):
             self.selected_menu_item = (self.selected_menu_item + 1) % 3
         elif symbol == arcade.key.ENTER:
-            if self.selected_menu_item == 0:  # Start Simulation
-                self.current_state = SIMULATION_STATE
-                self.simulation.reset()  # Reset simulation state
-            elif self.selected_menu_item == 1:  # Options
-                self.current_state = OPTIONS_STATE
-            elif self.selected_menu_item == 2:  # Exit
-                arcade.exit()
+            self.select_menu_item()
         elif symbol == arcade.key.ESCAPE:
+            arcade.exit()
+    
+    def select_menu_item(self):
+        """Execute the currently selected menu item."""
+        if self.selected_menu_item == 0:  # Start Simulation
+            self.current_state = SIMULATION_STATE
+            self.simulation.reset()  # Reset simulation state
+        elif self.selected_menu_item == 1:  # Options
+            self.current_state = OPTIONS_STATE
+        elif self.selected_menu_item == 2:  # Exit
             arcade.exit()
     
     def handle_simulation_keys(self, symbol: int):
@@ -137,6 +141,19 @@ class App(arcade.Window):
         # Only handle key releases in simulation state
         if self.current_state == SIMULATION_STATE:
             self.simulation.handle_key_release(symbol)
+    
+    def on_mouse_press(self, x: int, y: int, button: int, modifiers: int):
+        """Handle mouse click events."""
+        if self.current_state == MENU_STATE and button == arcade.MOUSE_BUTTON_LEFT:
+            # Calculate which menu item was clicked
+            start_y = HEIGHT // 2 + 50
+            for i in range(3):  # 3 menu items
+                y_pos = start_y - (i * 60)
+                # Check if click is within the menu item area (approximate)
+                if y_pos - 30 <= y <= y_pos + 30:
+                    self.selected_menu_item = i
+                    self.select_menu_item()
+                    break
     
     def on_resize(self, width: int, height: int):
         """Handle window resize events."""
