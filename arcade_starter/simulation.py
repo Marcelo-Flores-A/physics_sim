@@ -48,14 +48,14 @@ class PhysicsSimulation:
         self.height = height
         
         # Physics-only object sprite
-        self.object = CircleSprite(16, arcade.color.AZURE)  # 16 pixel radius = 32 pixel diameter. TBD: Fix object color
+        self.object = CircleSprite(16, arcade.color.AZURE_MIST)  # 16 pixel radius = 32 pixel diameter.
         self.object.center_x = width // 2
         self.object.center_y = height // 2
         self.object_list = arcade.SpriteList()
         self.object_list.append(self.object)
         
         # Player-controlled bar sprite
-        self.bar = arcade.SpriteSolidColor(80, 16, arcade.color.RED) # TBD: Fix bar color
+        self.bar = arcade.SpriteSolidColor(80, 16, 0, 0, arcade.color.BABY_BLUE)
         self.bar.center_x = width // 2
         self.bar.center_y = 100  # Near bottom of screen
         self.bar_list = arcade.SpriteList()
