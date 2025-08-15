@@ -84,6 +84,59 @@ class PhysicsEngine:
         """Add a player controller to be managed by the engine."""
         self.player_controllers.append(player_controller)
     
+    def check_collision(self, sprite1: arcade.Sprite, sprite2: arcade.Sprite) -> bool:
+        """Check if two sprites are colliding using bounding box collision detection."""
+        # Get half dimensions for each sprite
+        half_w1, half_h1 = sprite1.width / 2, sprite1.height / 2
+        half_w2, half_h2 = sprite2.width / 2, sprite2.height / 2
+        
+        # Calculate distance between centers
+        dx = abs(sprite1.center_x - sprite2.center_x)
+        dy = abs(sprite1.center_y - sprite2.center_y)
+        
+        # Check if sprites overlap
+        return dx < (half_w1 + half_w2) and dy < (half_h1 + half_h2)
+    
+    def handle_collision(self, physics_obj: PhysicsObject, controller: PlayerController):
+        """Handle collision between a physics object and a player-controlled object."""
+        # Calculate collision normal based on relative positions
+        dx = physics_obj.sprite.center_x - controller.sprite.center_x
+        dy = physics_obj.sprite.center_y - controller.sprite.center_y
+        
+        # Determine collision side based on which axis has smaller overlap
+        sprite1, sprite2 = physics_obj.sprite, controller.sprite
+        half_w1, half_h1 = sprite1.width / 2, sprite1.height / 2
+        half_w2, half_h2 = sprite2.width / 2, sprite2.height / 2
+        
+        # Calculate overlap on each axis
+        x_overlap = (half_w1 + half_w2) - abs(dx)
+        y_overlap = (half_h1 + half_h2) - abs(dy)
+        
+        # Resolve collision based on smallest overlap
+        if x_overlap < y_overlap:
+            # Horizontal collision - reverse x velocity
+            physics_obj.velocity_x = -physics_obj.velocity_x
+            # Separate sprites horizontally
+            if dx > 0:
+                physics_obj.sprite.center_x = controller.sprite.center_x + half_w2 + half_w1
+            else:
+                physics_obj.sprite.center_x = controller.sprite.center_x - half_w2 - half_w1
+        else:
+            # Vertical collision - reverse y velocity with some energy loss
+            physics_obj.velocity_y = -physics_obj.velocity_y * 0.8
+            # Separate sprites vertically
+            if dy > 0:
+                physics_obj.sprite.center_y = controller.sprite.center_y + half_h2 + half_h1
+            else:
+                physics_obj.sprite.center_y = controller.sprite.center_y - half_h2 - half_h1
+            
+            # Add some horizontal velocity based on where the ball hit the bar
+            # This makes the game more interesting by allowing the player to influence ball direction
+            bar_center = controller.sprite.center_x
+            ball_center = physics_obj.sprite.center_x
+            hit_position = (ball_center - bar_center) / (controller.sprite.width / 2)  # -1 to 1
+            physics_obj.velocity_x += hit_position * 200  # Add velocity based on hit position
+    
     def update(self, delta_time: float, keys: set, world_width: int, world_height: int):
         """Update all physics objects and player controllers."""
         # Update physics objects
@@ -93,6 +146,12 @@ class PhysicsEngine:
         # Update player controllers
         for controller in self.player_controllers:
             controller.update_movement(delta_time, keys, world_width)
+        
+        # Check for collisions between physics objects and player controllers
+        for physics_obj in self.physics_objects:
+            for controller in self.player_controllers:
+                if self.check_collision(physics_obj.sprite, controller.sprite):
+                    self.handle_collision(physics_obj, controller)
     
     def reset_physics_object(self, index: int, x: float, y: float, velocity_x: float = 0.0, velocity_y: float = 0.0):
         """Reset a physics object to initial state."""
