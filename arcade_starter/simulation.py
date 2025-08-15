@@ -18,14 +18,14 @@ class PhysicsSimulation:
         self.height = height
         
         # Physics-only object sprite
-        self.object = arcade.SpriteSolidColor(32, 32, arcade.color.AZURE)
+        self.object = arcade.SpriteSolidColor(32, 32, arcade.color.AZURE) # TBD: Fix object color
         self.object.center_x = width // 2
         self.object.center_y = height // 2
         self.object_list = arcade.SpriteList()
         self.object_list.append(self.object)
         
         # Player-controlled bar sprite
-        self.bar = arcade.SpriteSolidColor(80, 16, arcade.color.RED)
+        self.bar = arcade.SpriteSolidColor(80, 16, arcade.color.RED) # TBD: Fix bar color
         self.bar.center_x = width // 2
         self.bar.center_y = 100  # Near bottom of screen
         self.bar_list = arcade.SpriteList()
@@ -72,34 +72,26 @@ class PhysicsSimulation:
         self.bar_list.draw()
         
         # HUD
-        controls = "Move Bar: WASD / Arrows   Fullscreen: F11   Back to Menu: ESC"
-        arcade.draw_text(controls, 10, 10, arcade.color.LIGHT_GRAY, 14)
+        controls = "Move Left: A   Move Right: D   Fullscreen: F11   Back to Menu: ESC"
+        arcade.draw_text(controls, 10, 500, arcade.color.LIGHT_GRAY, 14)
         
         # Object info
         info = f"Blue Object: Physics-only (bouncing)   Red Bar: Player-controlled"
-        arcade.draw_text(info, 10, 30, arcade.color.LIGHT_GRAY, 14)
+        arcade.draw_text(info, 10, 520, arcade.color.LIGHT_GRAY, 14)
     
     def handle_key_press(self, symbol: int):
         """Handle key press events for simulation."""
-        if symbol in (arcade.key.LEFT, arcade.key.A):
+        if symbol == arcade.key.A:
             self.keys.add("left")
-        elif symbol in (arcade.key.RIGHT, arcade.key.D):
+        elif symbol == arcade.key.D:
             self.keys.add("right")
-        elif symbol in (arcade.key.UP, arcade.key.W):
-            self.keys.add("up")
-        elif symbol in (arcade.key.DOWN, arcade.key.S):
-            self.keys.add("down")
     
     def handle_key_release(self, symbol: int):
         """Handle key release events for simulation."""
-        if symbol in (arcade.key.LEFT, arcade.key.A):
+        if symbol == arcade.key.A:
             self.keys.discard("left")
-        elif symbol in (arcade.key.RIGHT, arcade.key.D):
+        elif symbol == arcade.key.D:
             self.keys.discard("right")
-        elif symbol in (arcade.key.UP, arcade.key.W):
-            self.keys.discard("up")
-        elif symbol in (arcade.key.DOWN, arcade.key.S):
-            self.keys.discard("down")
     
     def resize(self, width: int, height: int):
         """Handle window resize events."""
