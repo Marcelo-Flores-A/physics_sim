@@ -64,7 +64,7 @@ class App(arcade.Window):
                 arcade.draw_text("<", WIDTH // 2 + 120, y_pos, arcade.color.YELLOW, 24)
         
         # Instructions
-        arcade.draw_text("Use UP (W)/DOWN (S) to navigate, ENTER or click to select", 
+        arcade.draw_text("Select: ENTER / click   Fullscreen: F11", 
                         WIDTH // 2, 50, arcade.color.LIGHT_GRAY, 16, anchor_x="center")
     
     def draw_options(self):
@@ -108,6 +108,8 @@ class App(arcade.Window):
             self.selected_menu_item = (self.selected_menu_item + 1) % 3
         elif symbol == arcade.key.ENTER:
             self.select_menu_item()
+        elif symbol == arcade.key.F11:
+            self.set_fullscreen(not self.fullscreen)
         elif symbol == arcade.key.ESCAPE:
             arcade.exit()
     
@@ -133,7 +135,9 @@ class App(arcade.Window):
     
     def handle_options_keys(self, symbol: int):
         """Handle key presses in the options state."""
-        if symbol == arcade.key.ESCAPE:
+        if symbol == arcade.key.F11:
+            self.set_fullscreen(not self.fullscreen)
+        elif symbol == arcade.key.ESCAPE:
             self.current_state = MENU_STATE
 
     def on_key_release(self, symbol: int, modifiers: int):
