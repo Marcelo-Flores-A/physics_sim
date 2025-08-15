@@ -8,6 +8,7 @@ for objects in the simulation.
 import arcade
 from typing import Tuple
 
+BAR_SPEED = 500.0
 
 class PhysicsObject:
     """A physics-enabled object with position, velocity, and collision detection."""
@@ -52,7 +53,7 @@ class PhysicsObject:
 class PlayerController:
     """Handles player input and movement for controllable objects."""
     
-    def __init__(self, sprite: arcade.Sprite, move_speed: float = 300.0):
+    def __init__(self, sprite: arcade.Sprite, move_speed: float = BAR_SPEED):
         self.sprite = sprite
         self.move_speed = move_speed
     

@@ -12,6 +12,34 @@ from physics import PhysicsEngine, PhysicsObject, PlayerController
 BAR_SPEED = 500.0
 OBJECT_INITIAL_SPEED_X = 100.0
 
+
+class CircleSprite(arcade.Sprite):
+    """A circular sprite that draws as a filled circle."""
+    
+    def __init__(self, radius: int, color: tuple):
+        super().__init__()
+        self.radius = radius
+        self.color = color
+        
+        # Create a circular texture using PIL
+        self._create_circle_texture()
+    
+    def _create_circle_texture(self):
+        """Create a circular texture using PIL."""
+        import PIL.Image
+        import PIL.ImageDraw
+        
+        # Create an image with transparency
+        size = self.radius * 2
+        image = PIL.Image.new("RGBA", (size, size), (0, 0, 0, 0))
+        draw = PIL.ImageDraw.Draw(image)
+        
+        # Draw a filled circle
+        draw.ellipse([0, 0, size - 1, size - 1], fill=self.color)
+        
+        # Create texture from the image using the correct method
+        self.texture = arcade.Texture(name="circle", image=image)
+
 class PhysicsSimulation:
     """Handles the physics simulation state and visual representation."""
     
@@ -20,7 +48,7 @@ class PhysicsSimulation:
         self.height = height
         
         # Physics-only object sprite
-        self.object = arcade.SpriteSolidColor(32, 32, arcade.color.AZURE) # TBD: Fix object color
+        self.object = CircleSprite(16, arcade.color.AZURE)  # 16 pixel radius = 32 pixel diameter. TBD: Fix object color
         self.object.center_x = width // 2
         self.object.center_y = height // 2
         self.object_list = arcade.SpriteList()
@@ -78,7 +106,7 @@ class PhysicsSimulation:
         arcade.draw_text(controls, 10, 500, arcade.color.LIGHT_GRAY, 14)
         
         # Object info
-        info = f"Blue Object: Physics-only (bouncing)   Red Bar: Player-controlled"
+        info = f"Blue Ball: Physics-only (bouncing)   Red Bar: Player-controlled"
         arcade.draw_text(info, 10, 520, arcade.color.LIGHT_GRAY, 14)
     
     def handle_key_press(self, symbol: int):
