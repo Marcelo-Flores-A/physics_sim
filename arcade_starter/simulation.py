@@ -9,7 +9,6 @@ import arcade
 from typing import Set
 from physics import PhysicsEngine, PhysicsObject, PlayerController
 
-BAR_SPEED = 500.0
 OBJECT_INITIAL_SPEED_X = 100.0
 
 
@@ -65,11 +64,11 @@ class PhysicsSimulation:
         self.physics_engine = PhysicsEngine()
         
         # Create physics object for the bouncing object
-        self.physics_object = PhysicsObject(self.object, velocity_x = OBJECT_INITIAL_SPEED_X, velocity_y=0.0)
+        self.physics_object = PhysicsObject(self.object)
         self.physics_engine.add_physics_object(self.physics_object)
         
         # Create player controller for the bar
-        self.player_controller = PlayerController(self.bar, move_speed = BAR_SPEED)
+        self.player_controller = PlayerController(self.bar)
         self.physics_engine.add_player_controller(self.player_controller)
         
         # Track pressed directions for bar control

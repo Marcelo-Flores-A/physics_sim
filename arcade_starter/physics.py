@@ -8,16 +8,22 @@ for objects in the simulation.
 import arcade
 from typing import Tuple
 
+BAR_MASS = 1.0
 BAR_SPEED = 500.0
+OBJECT_MASS = 1.0
+OBJECT_INITIAL_SPEED_X = 100.0
+GAVITY = -980.0 # pixels/second²
 
 class PhysicsObject:
     """A physics-enabled object with position, velocity, and collision detection."""
     
-    def __init__(self, sprite: arcade.Sprite, velocity_x: float = 0.0, velocity_y: float = 0.0):
+    def __init__(self, sprite: arcade.Sprite, mass: float = OBJECT_MASS, velocity_x: float = OBJECT_INITIAL_SPEED_X, acceleration_x: float = 0.0, velocity_y: float = 0.0, acceleration_y: float = GAVITY):
         self.sprite = sprite
+        self.mass = mass
         self.velocity_x = velocity_x
+        self.acceleration_x = acceleration_x
         self.velocity_y = velocity_y
-        self.gravity = -980  # pixels/second²
+        self.acceleration_y = acceleration_y
     
     def update_physics(self, delta_time: float, world_width: int, world_height: int):
         """Update physics for this object."""
@@ -26,9 +32,10 @@ class PhysicsObject:
         half_h = self.sprite.height / 2
 
         # Calculate horizontal movement
+        self.velocity_x += self.acceleration_x * delta_time
         dx = self.velocity_x * delta_time
         # Calculate vertical movement
-        self.velocity_y += self.gravity * delta_time
+        self.velocity_y += self.acceleration_y * delta_time
         dy = self.velocity_y * delta_time
 
         # Update position
@@ -53,8 +60,9 @@ class PhysicsObject:
 class PlayerController:
     """Handles player input and movement for controllable objects."""
     
-    def __init__(self, sprite: arcade.Sprite, move_speed: float = BAR_SPEED):
+    def __init__(self, sprite: arcade.Sprite, mass: float = BAR_MASS, move_speed: float = BAR_SPEED):
         self.sprite = sprite
+        self.mass = mass
         self.move_speed = move_speed
     
     def update_movement(self, delta_time: float, keys: set, world_width: int):
