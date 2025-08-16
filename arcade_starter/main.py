@@ -76,7 +76,7 @@ class App(arcade.Window):
         # Options content
         arcade.draw_text("Gravity: -980 pixels/second²", WIDTH // 2, HEIGHT // 2 + 50, 
                         arcade.color.WHITE, 20, anchor_x="center")
-        arcade.draw_text("Move Speed: 300 pixels/second", WIDTH // 2, HEIGHT // 2, 
+        arcade.draw_text("Move Speed: 500 pixels/second", WIDTH // 2, HEIGHT // 2, 
                         arcade.color.WHITE, 20, anchor_x="center")
         arcade.draw_text("Update Rate: 120 FPS", WIDTH // 2, HEIGHT // 2 - 50, 
                         arcade.color.WHITE, 20, anchor_x="center")
