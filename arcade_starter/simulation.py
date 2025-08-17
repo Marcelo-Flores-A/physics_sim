@@ -10,6 +10,7 @@ from typing import Set
 from physics import PhysicsEngine, PhysicsObject, PlayerController
 
 OBJECT_INITIAL_SPEED_X = 100.0
+HEGITH_OF_BAR = 200
 
 
 class CircleSprite(arcade.Sprite):
@@ -54,9 +55,9 @@ class PhysicsSimulation:
         self.object_list.append(self.object)
         
         # Player-controlled bar sprite
-        self.bar = arcade.SpriteSolidColor(80, 16, 0, 0, arcade.color.BABY_BLUE)
+        self.bar = arcade.SpriteSolidColor(700, 16, 0, 0, arcade.color.BABY_BLUE)
         self.bar.center_x = width // 2
-        self.bar.center_y = 100  # Near bottom of screen
+        self.bar.center_y = HEGITH_OF_BAR  # Near bottom of screen
         self.bar_list = arcade.SpriteList()
         self.bar_list.append(self.bar)
         
@@ -86,7 +87,7 @@ class PhysicsSimulation:
         )
         
         # Reset player-controlled bar using physics engine
-        self.physics_engine.reset_player_controller(0, self.width // 2, 100)
+        self.physics_engine.reset_player_controller(0, self.width // 2, HEGITH_OF_BAR)
         
         self.keys.clear()
     
@@ -101,7 +102,7 @@ class PhysicsSimulation:
         self.bar_list.draw()
         
         # HUD
-        controls = "Move Left: A   Move Right: D   Reset: R   Fullscreen: F11   Back to Menu: ESC"
+        controls = "Tilt Counter-Clockwise: A   Tilt Clockwise: D   Reset: R   Fullscreen: F11   Back to Menu: ESC"
         arcade.draw_text(controls, 10, 500, arcade.color.LIGHT_GRAY, 14)
         
         # Object info
@@ -111,23 +112,20 @@ class PhysicsSimulation:
     def handle_key_press(self, symbol: int):
         """Handle key press events for simulation."""
         if symbol == arcade.key.A:
-            self.keys.add("left")
+            self.keys.add("counter-clockwise")
         elif symbol == arcade.key.D:
-            self.keys.add("right")
+            self.keys.add("clockwise")
         elif symbol == arcade.key.R:
             self.reset()
     
     def handle_key_release(self, symbol: int):
         """Handle key release events for simulation."""
         if symbol == arcade.key.A:
-            self.keys.discard("left")
+            self.keys.discard("counter-clockwise")
         elif symbol == arcade.key.D:
-            self.keys.discard("right")
+            self.keys.discard("clockwise")
     
     def resize(self, width: int, height: int):
         """Handle window resize events."""
         self.width = width
         self.height = height
-        
-        # Keep bar at bottom when resizing
-        self.bar.center_y = 100

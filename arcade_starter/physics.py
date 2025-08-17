@@ -9,7 +9,7 @@ import arcade
 from typing import Tuple
 
 BAR_MASS = 1.0
-BAR_SPEED = 500.0
+BAR_SPEED = 400.0
 OBJECT_MASS = 1.0
 OBJECT_INITIAL_SPEED_X = 100.0
 GAVITY = -980.0 # pixels/second²
@@ -63,10 +63,10 @@ class PhysicsObject:
 class PlayerController:
     """Handles player input and movement for controllable objects."""
     
-    def __init__(self, sprite: arcade.Sprite, mass: float = BAR_MASS, move_speed: float = BAR_SPEED):
+    def __init__(self, sprite: arcade.Sprite, mass: float = BAR_MASS, rotation_speed: float = BAR_SPEED):
         self.sprite = sprite
         self.mass = mass
-        self.move_speed = move_speed
+        self.rotation_speed = rotation_speed
     
     def update_movement(self, delta_time: float, keys: set, world_width: int):
         """Update player-controlled movement."""
@@ -74,11 +74,10 @@ class PlayerController:
         half_w = self.sprite.width / 2
         
         # Player control for sprite's x position
-        dx = (("right" in keys) - ("left" in keys)) * self.move_speed * delta_time
-        
-        # Update position and clamp to window bounds
-        new_x = self.sprite.center_x + dx
-        self.sprite.center_x = max(half_w, min(world_width - half_w, new_x))
+        self.sprite.change_angle = (("clockwise" in keys) - ("counter-clockwise" in keys)) * self.rotation_speed
+
+        # Update bar's new tilt angle
+        self.sprite.angle += self.sprite.change_angle * delta_time
 
 
 class PhysicsEngine:
