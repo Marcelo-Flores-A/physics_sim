@@ -13,6 +13,7 @@ BAR_SPEED = 500.0
 OBJECT_MASS = 1.0
 OBJECT_INITIAL_SPEED_X = 100.0
 GAVITY = -980.0 # pixels/second²
+FRICTION_COEFICIENT = 0.1
 
 class PhysicsObject:
     """A physics-enabled object with position, velocity, and collision detection."""
@@ -41,16 +42,18 @@ class PhysicsObject:
         # Update position
         new_x = self.sprite.center_x + dx
         new_y = self.sprite.center_y + dy
-        
-        # Bounce off walls for x direction
-        if new_x <= half_w or new_x >= world_width - half_w:
-            self.velocity_x = -self.velocity_x
-            new_x = max(half_w, min(world_width - half_w, new_x))
 
         # Bounce off floor for y direction
         if new_y <= half_h:
             self.velocity_y = -0.5 * self.velocity_y
             new_y = max(half_h, new_y)
+            # Update x movement due to floor's friction
+            self.velocity_x -= (1 if self.velocity_x > 0 else -1) * FRICTION_COEFICIENT * abs(GAVITY) * delta_time
+
+        # Bounce off walls for x direction
+        if new_x <= half_w or new_x >= world_width - half_w:
+            self.velocity_x = -self.velocity_x
+            new_x = max(half_w, min(world_width - half_w, new_x))
         
         # Clamp to window bounds
         self.sprite.center_x = new_x
