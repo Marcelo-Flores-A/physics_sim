@@ -101,7 +101,7 @@ class PhysicsSimulation:
         self.bar_list.draw()
         
         # HUD
-        controls = "Move Left: A   Move Right: D   Fullscreen: F11   Back to Menu: ESC"
+        controls = "Move Left: A   Move Right: D   Reset: R   Fullscreen: F11   Back to Menu: ESC"
         arcade.draw_text(controls, 10, 500, arcade.color.LIGHT_GRAY, 14)
         
         # Object info
@@ -114,6 +114,8 @@ class PhysicsSimulation:
             self.keys.add("left")
         elif symbol == arcade.key.D:
             self.keys.add("right")
+        elif symbol == arcade.key.R:
+            self.reset()
     
     def handle_key_release(self, symbol: int):
         """Handle key release events for simulation."""
