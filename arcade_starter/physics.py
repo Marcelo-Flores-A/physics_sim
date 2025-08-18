@@ -14,6 +14,7 @@ OBJECT_MASS = 1.0
 OBJECT_INITIAL_SPEED_X = 100.0
 GAVITY = -980.0 # pixels/second²
 FRICTION_COEFICIENT = 0.1
+OBJECT_ELASTICITY = 0.5
 
 class PhysicsObject:
     """A physics-enabled object with position, velocity, and collision detection."""
@@ -45,7 +46,7 @@ class PhysicsObject:
 
         # Bounce off floor for y direction
         if new_y <= half_h:
-            self.velocity_y = -0.5 * self.velocity_y
+            self.velocity_y = -OBJECT_ELASTICITY * self.velocity_y
             new_y = max(half_h, new_y)
             # Update x movement due to floor's friction
             self.velocity_x -= (1 if self.velocity_x > 0 else -1) * FRICTION_COEFICIENT * abs(GAVITY) * delta_time
@@ -95,19 +96,6 @@ class PhysicsEngine:
         """Add a player controller to be managed by the engine."""
         self.player_controllers.append(player_controller)
     
-    def check_collision(self, sprite1: arcade.Sprite, sprite2: arcade.Sprite) -> bool:
-        """Check if two sprites are colliding using bounding box collision detection."""
-        # Get half dimensions for each sprite
-        half_w1, half_h1 = sprite1.width / 2, sprite1.height / 2
-        half_w2, half_h2 = sprite2.width / 2, sprite2.height / 2
-        
-        # Calculate distance between centers
-        dx = abs(sprite1.center_x - sprite2.center_x)
-        dy = abs(sprite1.center_y - sprite2.center_y)
-        
-        # Check if sprites overlap
-        return dx < (half_w1 + half_w2) and dy < (half_h1 + half_h2)
-    
     def handle_collision(self, physics_obj: PhysicsObject, controller: PlayerController):
         """Handle collision between a physics object and a player-controlled object."""
         # Calculate collision normal based on relative positions
@@ -134,7 +122,7 @@ class PhysicsEngine:
                 physics_obj.sprite.center_x = controller.sprite.center_x - half_w2 - half_w1
         else:
             # Vertical collision - reverse y velocity with some energy loss
-            physics_obj.velocity_y = -physics_obj.velocity_y * 0.8
+            physics_obj.velocity_y = -physics_obj.velocity_y * OBJECT_ELASTICITY
             # Separate sprites vertically
             if dy > 0:
                 physics_obj.sprite.center_y = controller.sprite.center_y + half_h2 + half_h1
@@ -158,10 +146,10 @@ class PhysicsEngine:
         for controller in self.player_controllers:
             controller.update_movement(delta_time, keys, world_width)
         
-        # Check for collisions between physics objects and player controllers
+        # Check for collisions between physics objects and player controllers using arcade's built-in collision detection
         for physics_obj in self.physics_objects:
             for controller in self.player_controllers:
-                if self.check_collision(physics_obj.sprite, controller.sprite):
+                if physics_obj.sprite.collides_with_sprite(controller.sprite):
                     self.handle_collision(physics_obj, controller)
     
     def reset_physics_object(self, index: int, x: float, y: float, velocity_x: float = 0.0, velocity_y: float = 0.0):
@@ -173,9 +161,10 @@ class PhysicsEngine:
             physics_obj.velocity_x = velocity_x
             physics_obj.velocity_y = velocity_y
     
-    def reset_player_controller(self, index: int, x: float, y: float):
+    def reset_player_controller(self, index: int, x: float, y: float, angle: float = 0.0):
         """Reset a player controller to initial position."""
         if 0 <= index < len(self.player_controllers):
             controller = self.player_controllers[index]
             controller.sprite.center_x = x
             controller.sprite.center_y = y
+            controller.sprite.angle = angle 
