@@ -7,6 +7,7 @@ for objects in the simulation.
 
 import arcade
 from typing import Tuple
+import math
 
 BAR_MASS = 1.0
 BAR_SPEED = 400.0
@@ -135,7 +136,85 @@ class PhysicsEngine:
             ball_center = physics_obj.sprite.center_x
             hit_position = (ball_center - bar_center) / (controller.sprite.width / 2)  # -1 to 1
             physics_obj.velocity_x += hit_position * 200  # Add velocity based on hit position
-    
+
+    def handle_collision_better(self, delta_time: float, physics_obj: PhysicsObject, controller: PlayerController):
+        """Handle collision between a physics object (circle) and a player-controlled object (rectangle)."""
+        
+        # Get the bar's angle in radians
+        bar_angle_rad = math.radians(controller.sprite.angle)
+        cos_angle = math.cos(bar_angle_rad)
+        sin_angle = math.sin(bar_angle_rad)
+
+        # Vector from bar's center to circle's center
+        dx = physics_obj.sprite.center_x - controller.sprite.center_x
+        dy = physics_obj.sprite.center_y - controller.sprite.center_y
+        
+        # Transform circle position to bar's local coordinates
+        local_x = dx * cos_angle + dy * sin_angle  # Along bar's length
+        local_y = -dx * sin_angle + dy * cos_angle  # Perpendicular to bar
+
+        # Distance from center to borders of sprites
+        bar_half_width = controller.sprite.width / 2
+        bar_half_height = controller.sprite.height / 2
+        circle_radius = physics_obj.sprite.width / 2
+
+        # Find the closest point on the rectangle to the circle's center
+        closest_x = max(-bar_half_width, min(bar_half_width, local_x))
+        closest_y = max(-bar_half_height, min(bar_half_height, local_y))
+
+        # Calculate the collision normal in local space
+        normal_x = local_x - closest_x
+        normal_y = local_y - closest_y
+        
+        # Normalize the collision normal
+        normal_length = math.sqrt(normal_x * normal_x + normal_y * normal_y)
+        if normal_length > 0:
+            normal_x /= normal_length
+            normal_y /= normal_length
+        else:
+            # Circle center is inside rectangle, use perpendicular distance to edges
+            if abs(local_x) / bar_half_width > abs(local_y) / bar_half_height:
+                # Closer to left/right edge
+                normal_x = 1.0 if local_x > 0 else -1.0
+                normal_y = 0.0
+            else:
+                # Closer to top/bottom edge
+                normal_x = 0.0
+                normal_y = 1.0 if local_y > 0 else -1.0
+
+        # Transform normal back to world coordinates
+        world_normal_x = normal_x * cos_angle - normal_y * sin_angle
+        world_normal_y = normal_x * sin_angle + normal_y * cos_angle
+
+        # Calculate relative velocity
+        vel_x = physics_obj.velocity_x
+        vel_y = physics_obj.velocity_y
+
+        # Calculate velocity component along the normal (dot product)
+        vel_normal = vel_x * world_normal_x + vel_y * world_normal_y
+
+        # Only resolve collision if objects are moving towards each other
+        if vel_normal < 0:
+            # Apply reflection: v_new = v_old - 2 * (v_old · n) * n
+            physics_obj.velocity_x -= 2 * vel_normal * world_normal_x
+            physics_obj.velocity_y -= 2 * vel_normal * world_normal_y
+            
+            # Apply elasticity
+            physics_obj.velocity_x *= OBJECT_ELASTICITY
+            physics_obj.velocity_y *= OBJECT_ELASTICITY
+
+            # Add some horizontal velocity based on where the ball hit the bar (for gameplay)
+            if abs(normal_y) > 0.7:  # Hit top or bottom of bar
+                hit_position = local_x / bar_half_width  # -1 to 1
+                physics_obj.velocity_x += hit_position * 150  # Add spin effect
+
+        # Separate the objects to prevent overlap
+        penetration_depth = circle_radius - normal_length
+        if penetration_depth > 0:
+            # Move circle out of rectangle
+            physics_obj.sprite.center_x += world_normal_x * penetration_depth
+            physics_obj.sprite.center_y += world_normal_y * penetration_depth
+
     def update(self, delta_time: float, keys: set, world_width: int, world_height: int):
         """Update all physics objects and player controllers."""
         # Update physics objects
@@ -150,7 +229,7 @@ class PhysicsEngine:
         for physics_obj in self.physics_objects:
             for controller in self.player_controllers:
                 if physics_obj.sprite.collides_with_sprite(controller.sprite):
-                    self.handle_collision(physics_obj, controller)
+                    self.handle_collision_better(delta_time, physics_obj, controller)
     
     def reset_physics_object(self, index: int, x: float, y: float, velocity_x: float = 0.0, velocity_y: float = 0.0):
         """Reset a physics object to initial state."""
@@ -167,4 +246,4 @@ class PhysicsEngine:
             controller = self.player_controllers[index]
             controller.sprite.center_x = x
             controller.sprite.center_y = y
-            controller.sprite.angle = angle 
+            controller.sprite.angle = angle
