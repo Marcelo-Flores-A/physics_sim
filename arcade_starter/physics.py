@@ -96,48 +96,8 @@ class PhysicsEngine:
     def add_player_controller(self, player_controller: PlayerController):
         """Add a player controller to be managed by the engine."""
         self.player_controllers.append(player_controller)
-    
-    def handle_collision(self, physics_obj: PhysicsObject, controller: PlayerController):
-        """Handle collision between a physics object and a player-controlled object."""
-        # Calculate collision normal based on relative positions
-        dx = physics_obj.sprite.center_x - controller.sprite.center_x
-        dy = physics_obj.sprite.center_y - controller.sprite.center_y
-        
-        # Determine collision side based on which axis has smaller overlap
-        sprite1, sprite2 = physics_obj.sprite, controller.sprite
-        half_w1, half_h1 = sprite1.width / 2, sprite1.height / 2
-        half_w2, half_h2 = sprite2.width / 2, sprite2.height / 2
-        
-        # Calculate overlap on each axis
-        x_overlap = (half_w1 + half_w2) - abs(dx)
-        y_overlap = (half_h1 + half_h2) - abs(dy)
-        
-        # Resolve collision based on smallest overlap
-        if x_overlap < y_overlap:
-            # Horizontal collision - reverse x velocity
-            physics_obj.velocity_x = -physics_obj.velocity_x
-            # Separate sprites horizontally
-            if dx > 0:
-                physics_obj.sprite.center_x = controller.sprite.center_x + half_w2 + half_w1
-            else:
-                physics_obj.sprite.center_x = controller.sprite.center_x - half_w2 - half_w1
-        else:
-            # Vertical collision - reverse y velocity with some energy loss
-            physics_obj.velocity_y = -physics_obj.velocity_y * OBJECT_ELASTICITY
-            # Separate sprites vertically
-            if dy > 0:
-                physics_obj.sprite.center_y = controller.sprite.center_y + half_h2 + half_h1
-            else:
-                physics_obj.sprite.center_y = controller.sprite.center_y - half_h2 - half_h1
-            
-            # Add some horizontal velocity based on where the ball hit the bar
-            # This makes the game more interesting by allowing the player to influence ball direction
-            bar_center = controller.sprite.center_x
-            ball_center = physics_obj.sprite.center_x
-            hit_position = (ball_center - bar_center) / (controller.sprite.width / 2)  # -1 to 1
-            physics_obj.velocity_x += hit_position * 200  # Add velocity based on hit position
 
-    def handle_collision_better(self, delta_time: float, physics_obj: PhysicsObject, controller: PlayerController):
+    def handle_collision(self, delta_time: float, physics_obj: PhysicsObject, controller: PlayerController):
         """Handle collision between a physics object (circle) and a player-controlled object (rectangle)."""
         
         # Get the bar's angle in radians
@@ -150,8 +110,22 @@ class PhysicsEngine:
         dy = physics_obj.sprite.center_y - controller.sprite.center_y
         
         # Transform circle position to bar's local coordinates
-        local_x = dx * cos_angle + dy * sin_angle  # Along bar's length
-        local_y = -dx * sin_angle + dy * cos_angle  # Perpendicular to bar
+        #
+        # Given a vector d = dxi + dyj that is rotated by an 
+        # angle α, it's represented by d' such that: d' = d * Tr
+        #  
+        #         where d' is the rotated vector
+        #               d is the original vector
+        #               Tr is the matrix of rotation
+        #
+        # Tr would then be
+        #                     _             _
+        #                    | Cos(α) -Sin(α)|
+        #               Tr = | Sin(α)  Cos(α)|
+        #                    |_             _|
+        
+        local_x = dx * cos_angle - dy * sin_angle  # Along bar's length
+        local_y = dx * sin_angle + dy * cos_angle  # Perpendicular to bar
 
         # Distance from center to borders of sprites
         bar_half_width = controller.sprite.width / 2
@@ -183,8 +157,22 @@ class PhysicsEngine:
                 normal_y = 1.0 if local_y > 0 else -1.0
 
         # Transform normal back to world coordinates
-        world_normal_x = normal_x * cos_angle - normal_y * sin_angle
-        world_normal_y = normal_x * sin_angle + normal_y * cos_angle
+        #
+        # Given a vector d' = dx'i + dy'j that has been rotated by an 
+        # angle α, it's represented by d such that: d = d' * inv(Tr)
+        #  
+        #         where d is the original vector
+        #               d' is the rotated vector
+        #               inv(Tr) is the inverse of the matrix of rotation Tr
+        #
+        # Given that Tr is ortogonal, inv(Tr) would then be its transpose matrix
+        #                          _             _
+        #                         | Cos(α)  Sin(α)|
+        #               inv(Tr) = |-Sin(α)  Cos(α)|
+        #                         |_             _|
+
+        world_normal_x = normal_x * cos_angle + normal_y * sin_angle
+        world_normal_y = -normal_x * sin_angle + normal_y * cos_angle
 
         # Calculate relative velocity
         vel_x = physics_obj.velocity_x
@@ -199,14 +187,14 @@ class PhysicsEngine:
             physics_obj.velocity_x -= 2 * vel_normal * world_normal_x
             physics_obj.velocity_y -= 2 * vel_normal * world_normal_y
             
-            # Apply elasticity
-            physics_obj.velocity_x *= OBJECT_ELASTICITY
+            # Apply elasticity # TBD: Currently the energy loss is way more of what should be...
+            physics_obj.velocity_x *= 0.99
             physics_obj.velocity_y *= OBJECT_ELASTICITY
 
             # Add some horizontal velocity based on where the ball hit the bar (for gameplay)
-            if abs(normal_y) > 0.7:  # Hit top or bottom of bar
-                hit_position = local_x / bar_half_width  # -1 to 1
-                physics_obj.velocity_x += hit_position * 150  # Add spin effect
+            #if abs(normal_y) > 0.7:  # Hit top or bottom of bar
+            #    hit_position = local_x / bar_half_width  # -1 to 1
+            #    physics_obj.velocity_x += hit_position * 150  # Add spin effect
 
         # Separate the objects to prevent overlap
         penetration_depth = circle_radius - normal_length
@@ -229,7 +217,7 @@ class PhysicsEngine:
         for physics_obj in self.physics_objects:
             for controller in self.player_controllers:
                 if physics_obj.sprite.collides_with_sprite(controller.sprite):
-                    self.handle_collision_better(delta_time, physics_obj, controller)
+                    self.handle_collision(delta_time, physics_obj, controller)
     
     def reset_physics_object(self, index: int, x: float, y: float, velocity_x: float = 0.0, velocity_y: float = 0.0):
         """Reset a physics object to initial state."""
