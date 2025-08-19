@@ -20,13 +20,14 @@ OBJECT_ELASTICITY = 0.5
 class PhysicsObject:
     """A physics-enabled object with position, velocity, and collision detection."""
     
-    def __init__(self, sprite: arcade.Sprite, mass: float = OBJECT_MASS, velocity_x: float = OBJECT_INITIAL_SPEED_X, acceleration_x: float = 0.0, velocity_y: float = 0.0, acceleration_y: float = GAVITY):
+    def __init__(self, sprite: arcade.Sprite, mass: float = OBJECT_MASS, velocity_x: float = OBJECT_INITIAL_SPEED_X, acceleration_x: float = 0.0, velocity_y: float = 0.0, acceleration_y: float = GAVITY, collision_contact: bool = False):
         self.sprite = sprite
         self.mass = mass
         self.velocity_x = velocity_x
         self.acceleration_x = acceleration_x
         self.velocity_y = velocity_y
         self.acceleration_y = acceleration_y
+        self.collision_contact = False # Used to track the contact with another object during a collision
     
     def update_physics(self, delta_time: float, world_width: int, world_height: int):
         """Update physics for this object."""
@@ -189,12 +190,8 @@ class PhysicsEngine:
             
             # Apply elasticity # TBD: Currently the energy loss is way more of what should be...
             physics_obj.velocity_x *= 0.99
-            physics_obj.velocity_y *= OBJECT_ELASTICITY
-
-            # Add some horizontal velocity based on where the ball hit the bar (for gameplay)
-            #if abs(normal_y) > 0.7:  # Hit top or bottom of bar
-            #    hit_position = local_x / bar_half_width  # -1 to 1
-            #    physics_obj.velocity_x += hit_position * 150  # Add spin effect
+            if self.collision_contact == False:
+                physics_obj.velocity_y *= OBJECT_ELASTICITY
 
         # Separate the objects to prevent overlap
         penetration_depth = circle_radius - normal_length
@@ -218,6 +215,9 @@ class PhysicsEngine:
             for controller in self.player_controllers:
                 if physics_obj.sprite.collides_with_sprite(controller.sprite):
                     self.handle_collision(delta_time, physics_obj, controller)
+                    self.collision_contact = True
+                else:
+                    self.collision_contact = False
     
     def reset_physics_object(self, index: int, x: float, y: float, velocity_x: float = 0.0, velocity_y: float = 0.0):
         """Reset a physics object to initial state."""
