@@ -9,18 +9,15 @@ import arcade
 from typing import Tuple
 import math
 
-BAR_MASS = 1.0
-BAR_SPEED = 400.0
-OBJECT_MASS = 1.0
-OBJECT_INITIAL_SPEED_X = 100.0
-GAVITY = -980.0 # pixels/second²
-FRICTION_COEFICIENT = 0.1
-OBJECT_ELASTICITY = 0.5
+from constants import (
+    BAR_MASS, BAR_SPEED, OBJECT_MASS, OBJECT_INITIAL_SPEED_X,
+    GRAVITY, FRICTION_COEFFICIENT, OBJECT_ELASTICITY
+)
 
 class PhysicsObject:
     """A physics-enabled object with position, velocity, and collision detection."""
     
-    def __init__(self, sprite: arcade.Sprite, mass: float = OBJECT_MASS, velocity_x: float = OBJECT_INITIAL_SPEED_X, acceleration_x: float = 0.0, velocity_y: float = 0.0, acceleration_y: float = GAVITY, collision_contact: bool = False):
+    def __init__(self, sprite: arcade.Sprite, mass: float = OBJECT_MASS, velocity_x: float = OBJECT_INITIAL_SPEED_X, acceleration_x: float = 0.0, velocity_y: float = 0.0, acceleration_y: float = GRAVITY, collision_contact: bool = False):
         self.sprite = sprite
         self.mass = mass
         self.velocity_x = velocity_x
@@ -51,7 +48,7 @@ class PhysicsObject:
             self.velocity_y = -OBJECT_ELASTICITY * self.velocity_y
             new_y = max(half_h, new_y)
             # Update x movement due to floor's friction
-            self.velocity_x -= (1 if self.velocity_x > 0 else -1) * FRICTION_COEFICIENT * abs(GAVITY) * delta_time
+            self.velocity_x -= (1 if self.velocity_x > 0 else -1) * FRICTION_COEFFICIENT * abs(GRAVITY) * delta_time
 
         # Bounce off walls for x direction
         if new_x <= half_w or new_x >= world_width - half_w:

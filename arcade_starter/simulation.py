@@ -8,37 +8,7 @@ for the particle physics simulation.
 import arcade
 from typing import Set
 from physics import PhysicsEngine, PhysicsObject, PlayerController
-
-OBJECT_INITIAL_SPEED_X = 100.0
-HEGITH_OF_BAR = 200
-
-
-class CircleSprite(arcade.Sprite):
-    """A circular sprite that draws as a filled circle."""
-    
-    def __init__(self, radius: int, color: tuple):
-        super().__init__()
-        self.radius = radius
-        self.color = color
-        
-        # Create a circular texture using PIL
-        self._create_circle_texture()
-    
-    def _create_circle_texture(self):
-        """Create a circular texture using PIL."""
-        import PIL.Image
-        import PIL.ImageDraw
-        
-        # Create an image with transparency
-        size = self.radius * 2
-        image = PIL.Image.new("RGBA", (size, size), (0, 0, 0, 0))
-        draw = PIL.ImageDraw.Draw(image)
-        
-        # Draw a filled circle
-        draw.ellipse([0, 0, size - 1, size - 1], fill=self.color)
-        
-        # Create texture from the image using the correct method
-        self.texture = arcade.Texture(name="circle", image=image)
+from constants import OBJECT_INITIAL_SPEED_X, HEIGHT_OF_BAR
 
 class PhysicsSimulation:
     """Handles the physics simulation state and visual representation."""
@@ -48,7 +18,7 @@ class PhysicsSimulation:
         self.height = height
         
         # Physics-only object sprite
-        self.object = CircleSprite(16, arcade.color.AZURE_MIST)  # 16 pixel radius = 32 pixel diameter.
+        self.object = arcade.SpriteCircle(16, arcade.color.AZURE_MIST, False)  # 16 pixel radius = 32 pixel diameter.
         self.object.center_x = width // 2
         self.object.center_y = height // 2
         self.object_list = arcade.SpriteList()
@@ -57,7 +27,7 @@ class PhysicsSimulation:
         # Player-controlled bar sprite
         self.bar = arcade.SpriteSolidColor(700, 16, 0, 0, arcade.color.BABY_BLUE)
         self.bar.center_x = width // 2
-        self.bar.center_y = HEGITH_OF_BAR  # Near bottom of screen
+        self.bar.center_y = HEIGHT_OF_BAR  # Near bottom of screen
         self.bar_list = arcade.SpriteList()
         self.bar_list.append(self.bar)
         
@@ -87,7 +57,7 @@ class PhysicsSimulation:
         )
         
         # Reset player-controlled bar using physics engine
-        self.physics_engine.reset_player_controller(0, self.width // 2, HEGITH_OF_BAR)
+        self.physics_engine.reset_player_controller(0, self.width // 2, HEIGHT_OF_BAR)
         
         self.keys.clear()
     

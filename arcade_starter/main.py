@@ -8,14 +8,7 @@ and state handling for the physics simulation application.
 
 import arcade
 from simulation import PhysicsSimulation
-
-WIDTH, HEIGHT = 960, 540
-TITLE = "Arcade Starter - Experiments"
-
-# Game states
-MENU_STATE = 0
-SIMULATION_STATE = 1
-OPTIONS_STATE = 2
+from constants import WIDTH, HEIGHT, TITLE, MENU_STATE, SIMULATION_STATE, OPTIONS_STATE
 
 
 class App(arcade.Window):
