@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Main Application Module
 

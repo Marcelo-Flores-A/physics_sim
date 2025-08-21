@@ -6,16 +6,19 @@ Centralizing constants here ensures consistency and makes configuration easier.
 """
 
 # Physics Constants
+BALL_RADIUS = 16 # pixels
 OBJECT_INITIAL_SPEED_X = 100.0
 GRAVITY = -980.0  # pixels/second²
 OBJECT_MASS = 1.0
 OBJECT_ELASTICITY = 0.5
 FRICTION_COEFFICIENT = 0.1
 
-# Player/Bar Constants  
+# Player/Bar Constants 
+BAR_WIDTH = 700
+BAR_HEIGHT = 16
 BAR_MASS = 1.0
 BAR_SPEED = 400.0
-HEIGHT_OF_BAR = 200
+BAR_POSITION_Y = 200
 
 # Display Constants
 WIDTH = 960
