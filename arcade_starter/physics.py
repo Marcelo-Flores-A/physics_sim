@@ -188,9 +188,9 @@ class PhysicsEngine:
             physics_obj.velocity_x -= 2 * vel_normal * world_normal_x
             physics_obj.velocity_y -= 2 * vel_normal * world_normal_y
             
-            # Apply elasticity # TBD: Currently the energy loss is way more of what should be...
-            physics_obj.velocity_x *= 0.99
+            # Apply elasticity
             if self.collision_contact == False:
+                physics_obj.velocity_x *= OBJECT_ELASTICITY
                 physics_obj.velocity_y *= OBJECT_ELASTICITY
 
         # Separate the objects to prevent overlap
