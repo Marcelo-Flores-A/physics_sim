@@ -17,8 +17,9 @@ from constants import (
 class PhysicsObject:
     """A physics-enabled object with position, velocity, and collision detection."""
     
-    def __init__(self, sprite: arcade.Sprite, mass: float = OBJECT_MASS, velocity_x: float = OBJECT_INITIAL_SPEED_X, acceleration_x: float = 0.0, velocity_y: float = 0.0, acceleration_y: float = GRAVITY, collision_contact: bool = False):
+    def __init__(self, sprite: arcade.Sprite, update_flag: bool = False, mass: float = OBJECT_MASS, velocity_x: float = OBJECT_INITIAL_SPEED_X, acceleration_x: float = 0.0, velocity_y: float = 0.0, acceleration_y: float = GRAVITY, collision_contact: bool = False):
         self.sprite = sprite
+        self.update_flag = update_flag
         self.mass = mass
         self.velocity_x = velocity_x
         self.acceleration_x = acceleration_x
@@ -79,8 +80,9 @@ class PhysicsObject:
 class PlayerController:
     """Handles player input and movement for controllable objects."""
     
-    def __init__(self, sprite: arcade.Sprite, mass: float = BAR_MASS, angular_speed: float = BAR_SPEED):
+    def __init__(self, sprite: arcade.Sprite, update_flag: bool = False, mass: float = BAR_MASS, angular_speed: float = BAR_SPEED):
         self.sprite = sprite
+        self.update_flag = update_flag
         self.mass = mass
         self.angular_speed = angular_speed
     
@@ -200,10 +202,8 @@ class PhysicsEngine:
             # Apply reflection: v_new = v_old - 2 * (v_old · n) * n
             physics_obj.velocity_x -= 2 * vel_normal * world_normal_x
             physics_obj.velocity_y -= 2 * vel_normal * world_normal_y
-            # Update angular speed of object
-            vel = math.sqrt(vel_x * vel_x + vel_y * vel_y)
-            # physics_obj.sprite.change_angle = vel * vel_normal * math.sin(math.atan(normal_length /vel)) * 360 / (circle_radius * math.pi)
-            physics_obj.sprite.change_angle = (vel_x * normal_y - vel_y * normal_x) * 360 / (circle_radius * math.pi)
+            # Update angular speed of object using the cross product between the object's velocity in global coordinates and the normal unitary vector  
+            physics_obj.sprite.change_angle = (vel_x * normal_y - vel_y * normal_x) * 360 / (circle_radius * math.pi) # representing the angular speed in radians/seconds
             
             # Apply elasticity
             if self.collision_contact == False:
@@ -221,11 +221,13 @@ class PhysicsEngine:
         """Update all physics objects and player controllers."""
         # Update physics objects
         for physics_obj in self.physics_objects:
-            physics_obj.update_physics(delta_time, world_width, world_height)
+            #physics_obj.update_physics(delta_time, world_width, world_height)
+            physics_obj.update_flag = False
         
         # Update player controllers
         for controller in self.player_controllers:
-            controller.update_movement(delta_time, keys, world_width)
+            #controller.update_movement(delta_time, keys, world_width)
+            controller.update_flag = False
         
         # Check for collisions between physics objects and player controllers using arcade's built-in collision detection
         for physics_obj in self.physics_objects:
@@ -233,8 +235,16 @@ class PhysicsEngine:
                 if physics_obj.sprite.collides_with_sprite(controller.sprite):
                     self.handle_collision(delta_time, physics_obj, controller)
                     self.collision_contact = True
+                    physics_obj.update_flag = True
+                    controller.update_flag = True
                 else:
                     self.collision_contact = False
+                    if physics_obj.update_flag == False:
+                        physics_obj.update_physics(delta_time, world_width, world_height)
+                        physics_obj.update_flag = True
+                    if controller.update_flag == False:
+                        controller.update_movement(delta_time, keys, world_width)
+                        controller.update_flag = True
     
     def reset_physics_object(self, index: int, x: float, y: float, velocity_x: float = 0.0, velocity_y: float = 0.0):
         """Reset a physics object to initial state."""
@@ -244,6 +254,7 @@ class PhysicsEngine:
             physics_obj.sprite.center_y = y
             physics_obj.velocity_x = velocity_x
             physics_obj.velocity_y = velocity_y
+            physics_obj.sprite.change_angle = OBJECT_INITIAL_ANGULAR_SPEED
     
     def reset_player_controller(self, index: int, x: float, y: float, angle: float = 0.0):
         """Reset a player controller to initial position."""
