@@ -10,7 +10,7 @@ from typing import Tuple
 import math
 
 from constants import (
-    BAR_MASS, BAR_SPEED, OBJECT_MASS, OBJECT_INITIAL_SPEED_X,
+    BAR_MASS, BAR_SPEED, OBJECT_MASS, OBJECT_INITIAL_SPEED_X, OBJECT_INITIAL_ANGULAR_SPEED,
     GRAVITY, FRICTION_COEFFICIENT, OBJECT_ELASTICITY
 )
 
@@ -24,6 +24,7 @@ class PhysicsObject:
         self.acceleration_x = acceleration_x
         self.velocity_y = velocity_y
         self.acceleration_y = acceleration_y
+        self.sprite.change_angle = OBJECT_INITIAL_ANGULAR_SPEED
         self.collision_contact = False # Used to track the contact with another object during a collision
     
     def update_physics(self, delta_time: float, world_width: int, world_height: int):
@@ -39,21 +40,36 @@ class PhysicsObject:
         self.velocity_y += self.acceleration_y * delta_time
         dy = self.velocity_y * delta_time
 
+        # Calculate new angle
+        self.sprite.angle += self.sprite.change_angle * delta_time
+
         # Update position
         new_x = self.sprite.center_x + dx
         new_y = self.sprite.center_y + dy
 
         # Bounce off floor for y direction
         if new_y <= half_h:
-            self.velocity_y = -OBJECT_ELASTICITY * self.velocity_y
+            self.velocity_y = -self.velocity_y * OBJECT_ELASTICITY
             new_y = max(half_h, new_y)
-            # Update x movement due to floor's friction
-            self.velocity_x -= (1 if self.velocity_x > 0 else -1) * FRICTION_COEFFICIENT * abs(GRAVITY) * delta_time
+            # Update x velocity due to floor's friction
+            if (self.velocity_x > 0):
+                self.velocity_x -= FRICTION_COEFFICIENT * abs(GRAVITY) * delta_time
+            else:
+                self.velocity_x += FRICTION_COEFFICIENT * abs(GRAVITY) * delta_time
+            # Update angular speed
+            self.sprite.change_angle = self.velocity_x * 360 / (half_w * math.pi) 
 
         # Bounce off walls for x direction
         if new_x <= half_w or new_x >= world_width - half_w:
             self.velocity_x = -self.velocity_x
             new_x = max(half_w, min(world_width - half_w, new_x))
+            # Update y velocity due to wall's friction
+            if (self.velocity_y > 0):
+                self.velocity_y -= FRICTION_COEFFICIENT * self.velocity_y * delta_time
+            else:
+                self.velocity_y += FRICTION_COEFFICIENT * self.velocity_y * delta_time
+            # Update angular speed
+            self.sprite.change_angle = self.velocity_y * 360 / (half_w * math.pi) 
         
         # Clamp to window bounds
         self.sprite.center_x = new_x
@@ -63,18 +79,18 @@ class PhysicsObject:
 class PlayerController:
     """Handles player input and movement for controllable objects."""
     
-    def __init__(self, sprite: arcade.Sprite, mass: float = BAR_MASS, rotation_speed: float = BAR_SPEED):
+    def __init__(self, sprite: arcade.Sprite, mass: float = BAR_MASS, angular_speed: float = BAR_SPEED):
         self.sprite = sprite
         self.mass = mass
-        self.rotation_speed = rotation_speed
+        self.angular_speed = angular_speed
     
     def update_movement(self, delta_time: float, keys: set, world_width: int):
         """Update player-controlled movement."""
         # Get distances from borders of sprite to its center
         half_w = self.sprite.width / 2
         
-        # Player control for sprite's x position
-        self.sprite.change_angle = (("clockwise" in keys) - ("counter-clockwise" in keys)) * self.rotation_speed
+        # Player control for sprite's angular speed
+        self.sprite.change_angle = (("clockwise" in keys) - ("counter-clockwise" in keys)) * self.angular_speed
 
         # Update bar's new tilt angle
         self.sprite.angle += self.sprite.change_angle * delta_time
@@ -184,6 +200,10 @@ class PhysicsEngine:
             # Apply reflection: v_new = v_old - 2 * (v_old · n) * n
             physics_obj.velocity_x -= 2 * vel_normal * world_normal_x
             physics_obj.velocity_y -= 2 * vel_normal * world_normal_y
+            # Update angular speed of object
+            vel = math.sqrt(vel_x * vel_x + vel_y * vel_y)
+            # physics_obj.sprite.change_angle = vel * vel_normal * math.sin(math.atan(normal_length /vel)) * 360 / (circle_radius * math.pi)
+            physics_obj.sprite.change_angle = (vel_x * normal_y - vel_y * normal_x) * 360 / (circle_radius * math.pi)
             
             # Apply elasticity
             if self.collision_contact == False:

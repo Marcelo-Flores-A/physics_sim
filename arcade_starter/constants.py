@@ -8,6 +8,7 @@ Centralizing constants here ensures consistency and makes configuration easier.
 # Physics Constants
 BALL_RADIUS = 16 # pixels
 OBJECT_INITIAL_SPEED_X = 100.0
+OBJECT_INITIAL_ANGULAR_SPEED = 500.0
 GRAVITY = -980.0  # pixels/second²
 OBJECT_MASS = 1.0
 OBJECT_ELASTICITY = 0.5
