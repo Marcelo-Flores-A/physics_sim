@@ -40,7 +40,6 @@ class PhysicsObject:
         # Calculate vertical movement
         self.velocity_y += self.acceleration_y * delta_time
         dy = self.velocity_y * delta_time
-
         # Calculate new angle
         self.sprite.angle += self.sprite.change_angle * delta_time
 
@@ -48,30 +47,6 @@ class PhysicsObject:
         new_x = self.sprite.center_x + dx
         new_y = self.sprite.center_y + dy
 
-        # Bounce off floor for y direction
-        if new_y <= half_h:
-            self.velocity_y = -self.velocity_y * OBJECT_ELASTICITY
-            new_y = max(half_h, new_y)
-            # Update x velocity due to floor's friction
-            if (self.velocity_x > 0):
-                self.velocity_x -= FRICTION_COEFFICIENT * abs(GRAVITY) * delta_time
-            else:
-                self.velocity_x += FRICTION_COEFFICIENT * abs(GRAVITY) * delta_time
-            # Update angular speed
-            self.sprite.change_angle = self.velocity_x * 360 / (half_w * math.pi) 
-
-        # Bounce off walls for x direction
-        if new_x <= half_w or new_x >= world_width - half_w:
-            self.velocity_x = -self.velocity_x
-            new_x = max(half_w, min(world_width - half_w, new_x))
-            # Update y velocity due to wall's friction
-            if (self.velocity_y > 0):
-                self.velocity_y -= FRICTION_COEFFICIENT * self.velocity_y * delta_time
-            else:
-                self.velocity_y += FRICTION_COEFFICIENT * self.velocity_y * delta_time
-            # Update angular speed
-            self.sprite.change_angle = self.velocity_y * 360 / (half_w * math.pi) 
-        
         # Clamp to window bounds
         self.sprite.center_x = new_x
         self.sprite.center_y = max(half_h, min(world_height - half_h, new_y))
@@ -113,7 +88,7 @@ class PhysicsEngine:
         """Add a player controller to be managed by the engine."""
         self.player_controllers.append(player_controller)
 
-    def handle_collision(self, delta_time: float, physics_obj: PhysicsObject, controller: PlayerController):
+    def handle_sprite_collision(self, delta_time: float, keys: set, world_width: int, world_height: int, physics_obj: PhysicsObject, controller: PlayerController):
         """Handle collision between a physics object (circle) and a player-controlled object (rectangle)."""
         
         # Get the bar's angle in radians
@@ -210,6 +185,10 @@ class PhysicsEngine:
                 physics_obj.velocity_x *= OBJECT_ELASTICITY
                 physics_obj.velocity_y *= OBJECT_ELASTICITY
 
+        # Update positions of both physics object and controllable object
+        physics_obj.update_physics(delta_time, world_width, world_height)
+        controller.update_movement(delta_time, keys, world_width)
+
         # Separate the objects to prevent overlap
         penetration_depth = circle_radius - normal_length
         if penetration_depth > 0:
@@ -217,23 +196,75 @@ class PhysicsEngine:
             physics_obj.sprite.center_x += world_normal_x * penetration_depth
             physics_obj.sprite.center_y += world_normal_y * penetration_depth
 
+    def handle_border_collision(self, delta_time: float, world_width: int, world_height: int, sprite):
+        """Handle collision between a sprite and the borders of the window."""
+
+        # Get distances from borders of sprite to its center
+        half_w = sprite.sprite.width / 2
+        half_h = sprite.sprite.height / 2
+        # Get x and y positions of the sprite's center
+        pos_x = sprite.sprite.center_x
+        pos_y = sprite.sprite.center_y
+        # Get the sprite's angle in radians # TBD: For controllable object collisions... later
+        # sprite_angle_rad = math.radians(sprite.sprite.angle)
+        # cos_angle = math.cos(sprite_angle_rad)
+        # sin_angle = math.sin(sprite_angle_rad)
+
+        # Collision between physics sprite and borders
+        if isinstance(sprite, PhysicsObject):
+            # Bounce off floor for y direction
+            if pos_y <= half_h:
+                sprite.velocity_y = -sprite.velocity_y * OBJECT_ELASTICITY
+                pos_y = max(half_h, pos_y)
+
+                # Update x velocity due to floor's friction
+                if (sprite.velocity_x > 0):
+                    sprite.velocity_x -= FRICTION_COEFFICIENT * abs(GRAVITY) * delta_time
+                else:
+                    sprite.velocity_x += FRICTION_COEFFICIENT * abs(GRAVITY) * delta_time
+                
+                # Update angular speed
+                sprite.sprite.change_angle = sprite.velocity_x * 360 / (half_w * math.pi) 
+
+            # Bounce off walls for x direction
+            if pos_x <= half_w or pos_x >= world_width - half_w:
+                sprite.velocity_x = -sprite.velocity_x
+                pos_x = max(half_w, min(world_width - half_w, pos_x))
+
+                # Update y velocity due to wall's friction
+                if (sprite.velocity_y > 0):
+                    sprite.velocity_y -= FRICTION_COEFFICIENT * sprite.velocity_y * delta_time
+                else:
+                    sprite.velocity_y += FRICTION_COEFFICIENT * sprite.velocity_y * delta_time
+                
+                # Update angular speed
+                sprite.sprite.change_angle = sprite.velocity_y * 360 / (half_w * math.pi) 
+            
+            # Clamp to window bounds
+            sprite.sprite.center_x = pos_x
+            sprite.sprite.center_y = max(half_h, min(world_height - half_h, pos_y))
+            
+        # Collision between controllable sprite and borders # TBD: Implement controlled object collisions with window's borders.
+        # elif isinstance(sprite, PlayerController):
+        # sprite.
+
     def update(self, delta_time: float, keys: set, world_width: int, world_height: int):
         """Update all physics objects and player controllers."""
-        # Update physics objects
+        # Resetting update flag and handling border collision for physics objects
         for physics_obj in self.physics_objects:
-            #physics_obj.update_physics(delta_time, world_width, world_height)
             physics_obj.update_flag = False
+            self.handle_border_collision(delta_time, world_width, world_height, physics_obj)
         
-        # Update player controllers
+        # Resetting update flag and handling border collision for player controller object
         for controller in self.player_controllers:
-            #controller.update_movement(delta_time, keys, world_width)
             controller.update_flag = False
+            self.handle_border_collision(delta_time, world_width, world_height, controller)
         
         # Check for collisions between physics objects and player controllers using arcade's built-in collision detection
         for physics_obj in self.physics_objects:
             for controller in self.player_controllers:
                 if physics_obj.sprite.collides_with_sprite(controller.sprite):
-                    self.handle_collision(delta_time, physics_obj, controller)
+                    self.handle_sprite_collision(delta_time, keys, world_width, world_height, physics_obj, controller)
                     self.collision_contact = True
                     physics_obj.update_flag = True
                     controller.update_flag = True
@@ -250,6 +281,7 @@ class PhysicsEngine:
         """Reset a physics object to initial state."""
         if 0 <= index < len(self.physics_objects):
             physics_obj = self.physics_objects[index]
+            physics_obj.update_flag = False
             physics_obj.sprite.center_x = x
             physics_obj.sprite.center_y = y
             physics_obj.velocity_x = velocity_x
@@ -260,6 +292,7 @@ class PhysicsEngine:
         """Reset a player controller to initial position."""
         if 0 <= index < len(self.player_controllers):
             controller = self.player_controllers[index]
+            controller.update_flag = False
             controller.sprite.center_x = x
             controller.sprite.center_y = y
             controller.sprite.angle = angle
